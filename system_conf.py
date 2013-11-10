@@ -13,7 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
+
 from collections import namedtuple
+
+import ansi
 
 class version(namedtuple('version', 'major minor patch extra')):
 
@@ -30,7 +34,13 @@ class version(namedtuple('version', 'major minor patch extra')):
                                         , self.extra
                                         )
 
-VERSION = version(0, 0, 0, 'development')
+
+version = version(0, 0, 0, 'development')
+
+def print_version(file=sys.stdout):
+    with ansi.sgr('34', file=file):
+        print('system-conf', version, end='', file=file)
+    print(file=file)
 
 def main():
-    print('system-conf', VERSION)
+    print_version()
