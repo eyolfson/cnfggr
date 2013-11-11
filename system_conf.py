@@ -52,52 +52,48 @@ class prefixer:
     def __exit__(self, type, value, traceback):
         self.file.write('\n')
 
+ignored_files = [ ( 'dconf', [ b'/usr/lib/gio/modules/giomodule.cache',
+                               b'/usr/share/applications/mimeinfo.cache',
+                               b'/usr/share/icons/hicolor/icon-theme.cache' ] ),
+                  ( 'dhcpcd', [ b'/etc/dhcpcd.duid' ] ),
+                  ( 'filesystem', [ b'/etc/group-',
+                                    b'/etc/gshadow-',
+                                    b'/etc/passwd-',
+                                    b'/etc/shadow-' ] ),
+                  ( 'gconf', [ b'/usr/lib/gio/modules/giomodule.cache' ] ),
+                  ( 'glibc', [ b'/etc/.pwd.lock',
+                               b'/etc/ld.so.cache',
+                               b'/usr/lib/locale/locale-archive' ] ),
+                  ( 'mkinitcpio', [ b'/boot/initramfs-linux.img',
+                                    b'/boot/initramfs-linux-fallback.img' ] ),
+                  ( 'pango', [ b'/etc/pango/pango.modules' ] ),
+                  ( 'systemd', [ b'/etc/machine-id',
+                                 b'/etc/udev/hwdb.bin' ] ),
+                  ( 'texinfo', [ b'/usr/share/info/dir' ] ) ]
+
 class pacman:
 
     def __init__(self):
         self.file = stdout
         self.installed_packages = self._command_to_set([ 'pacman', '-Qq' ])
-        self.ignored_files = { # dconf
-                               b'/usr/lib/gio/modules/giomodule.cache',
-                               b'/usr/share/applications/mimeinfo.cache',
-                               b'/usr/share/icons/hicolor/icon-theme.cache',
-                               # dhcpcd
-                               b'/etc/dhcpcd.duid',
-                               # filesystem
-                               b'/etc/group-',
-                               b'/etc/gshadow-',
-                               b'/etc/passwd-',
-                               b'/etc/shadow-',
-                               # gconf
-                               b'/usr/lib/gio/modules/giomodule.cache',
-                               # gdk-pixbuf2
+        self.ignored_files = { # gdk-pixbuf2
                                b'/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache',
                                # glib2
                                b'/usr/share/glib-2.0/schemas/gschemas.compiled',
-                               # glibc
-                               b'/etc/.pwd.lock',
-                               b'/etc/ld.so.cache',
-                               b'/usr/lib/locale/locale-archive',
                                # gtk2 (based off immodules)
                                b'/usr/lib/gtk-2.0/2.10.0/immodules.cache',
                                # gtk3 (based off immodules)
                                b'/usr/lib/gtk-3.0/3.0.0/immodules.cache',
-                               # mkinitcpio
-                               b'/boot/initramfs-linux.img',
-                               b'/boot/initramfs-linux-fallback.img',
-                               # pango
-                               b'/etc/pango/pango.modules',
-                               # systemd
-                               b'/etc/machine-id',
-                               b'/etc/udev/hwdb.bin',
-                               # texinfo
-                               b'/usr/share/info/dir',
                                # xorg-mkfontdir
                                b'/usr/share/fonts/TTF/fonts.dir',
                                b'/usr/share/fonts/misc/fonts.dir',
                                # xorg-mkfontscale
                                b'/usr/share/fonts/TTF/fonts.scale',
                                b'/usr/share/fonts/misc/fonts.scale' }
+        for package, files in ignored_files:
+            if self.installed(package, warn=False):
+                for f in files:
+                    self.ignored_files.add(f)
         self.ignored_dirs = [ # ca-certificates
                               b'/etc/ssl/certs/',
                               # fontconfig
@@ -111,9 +107,10 @@ class pacman:
                               b'/etc/systemd/system/multi-user.target.wants/' ]
 
     def _command_to_set(self, command):
-        with prefixer('command'):
-            with ansi.sgr('32'):
-                self.file.write(' '.join(command))
+        if command[0] == 'sudo':
+            with prefixer('command'):
+                with ansi.sgr('32'):
+                    self.file.write(' '.join(command))
         from subprocess import Popen, PIPE
         p = Popen(command, stdout=PIPE)
         s = set()
@@ -134,7 +131,7 @@ class pacman:
         self.ignored_files.add(f)
 
     def disowned(self):
-        p = prefixer(self.disowned.__name__)
+        prefix = prefixer(self.disowned.__name__)
         owned_command = [ 'pacman', '-Qlq' ]
         all_command = [ 'sudo', 'find', '/boot', '/etc', '/opt', '/usr', '!',
                         '-name', 'lost+found', '(', '-type', 'd', '-printf',
@@ -143,26 +140,27 @@ class pacman:
         all_files = self._command_to_set(all_command)
         for f in sorted(owned_files.difference(all_files)):
             if not path.lexists(f):
-                with p:
+                with prefix:
                     with ansi.sgr('31'):
                         self.file.write(f.decode())
                     self.file.write(' does not exist')
         for f in sorted(all_files.difference(owned_files)):
             if self._ignored(f):
                 continue
-            with p:
+            with prefix:
                 with ansi.sgr('33'):
                     self.file.write(f.decode())
                 self.file.write(' not owned')
 
-    def installed(self, p):
-        if fsencode(p) in self.installed_packages:
+    def installed(self, package, warn=True):
+        if fsencode(package) in self.installed_packages:
             return True
         else:
-            with prefixer(self.installed.__name__):
-                with ansi.sgr('33'):
-                    self.file.write(p)
-                self.file.write(' not installed')
+            if warn:
+                with prefixer(self.installed.__name__):
+                    with ansi.sgr('33'):
+                        self.file.write(package)
+                    self.file.write(' not installed')
             return False
 
 def main():
