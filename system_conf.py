@@ -13,10 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import sys
-
 from collections import namedtuple
+from os import fsencode, path, walk
+from sys import stdout
 
 import ansi
 
@@ -29,7 +28,7 @@ class version(namedtuple('version', 'major minor patch extra')):
             return 'v{}.{}.{}-{}'.format(self.major, self.minor, self.patch,
                                          self.extra)
 
-    def display(self, file=sys.stdout):
+    def display(self, file=stdout):
         with ansi.sgr('34', file=file):
             file.write('system-conf ')
             file.write(str(version))
@@ -39,7 +38,7 @@ version = version(0, 0, 0, 'development')
 
 class prefixer:
 
-    def __init__(self, prefix, file=sys.stdout):
+    def __init__(self, prefix, file=stdout):
         self.prefix = prefix
         self.file = file
 
@@ -56,7 +55,7 @@ class prefixer:
 class pacman:
 
     def __init__(self):
-        self.file = sys.stdout
+        self.file = stdout
         self.installed_packages = self._command_to_set([ 'pacman', '-Qq' ])
         self.ignored_files = { # dconf
                                b'/usr/lib/gio/modules/giomodule.cache',
@@ -139,7 +138,7 @@ class pacman:
         owned_files = self._command_to_set(owned_command)
         all_files = self._command_to_set(all_command)
         for f in sorted(owned_files.difference(all_files)):
-            if not os.path.lexists(f):
+            if not path.lexists(f):
                 with p:
                     with ansi.sgr('31'):
                         self.file.write(f.decode())
@@ -151,30 +150,33 @@ class pacman:
                     self.file.write(f.decode())
 
     def installed(self, p):
-        if os.fsencode(p) in self.installed_packages:
+        if fsencode(p) in self.installed_packages:
             return True
-        return False
+        else:
+            with prefixer(self.installed.__name__):
+                with ansi.sgr('33'):
+                    self.file.write(p)
+                self.file.write(' not installed')
+            return False
 
 def main():
     version.display()
-    git_dir = os.path.dirname(os.path.abspath(__file__))
-    git_dir_len = len(os.path.split(git_dir))
-    p = pacman()
-    for root, dirs, files in os.walk(git_dir):
+    git_dir = path.dirname(path.abspath(__file__))
+    db = pacman()
+    for root, dirs, files in walk(git_dir):
         if root == git_dir:
             package_dirs = []
             for d in dirs:
                 if d == '.git' or d == '__pycache__':
                     continue
-                if p.installed(d):
+                if db.installed(d):
                     package_dirs.append(d)
             dirs[:] = package_dirs
-        elif os.path.dirname(root) == git_dir:
+        elif path.dirname(root) == git_dir:
             current_dir = root
         else:
             for f in files:
-                abs_path = os.path.join(root, f)
-                rel_path = os.path.relpath(abs_path, current_dir)
-                dest_file = os.fsencode(os.path.join('/', rel_path))
+                rel_path = path.relpath(path.join(root, f), current_dir)
+                dest_file = fsencode(path.join('/', rel_path))
                 p.add_ignored_file(dest_file)
-    p.disowned()
+    db.disowned()
