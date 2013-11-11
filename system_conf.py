@@ -111,6 +111,9 @@ class pacman:
                               b'/etc/systemd/system/multi-user.target.wants/' ]
 
     def _command_to_set(self, command):
+        with prefixer('command'):
+            with ansi.sgr('32'):
+                self.file.write(' '.join(command))
         from subprocess import Popen, PIPE
         p = Popen(command, stdout=PIPE)
         s = set()
