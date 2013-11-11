@@ -142,12 +142,14 @@ class pacman:
                 with p:
                     with ansi.sgr('31'):
                         self.file.write(f.decode())
+                    self.file.write(' does not exist')
         for f in sorted(all_files.difference(owned_files)):
             if self._ignored(f):
                 continue
             with p:
                 with ansi.sgr('33'):
                     self.file.write(f.decode())
+                self.file.write(' not owned')
 
     def installed(self, p):
         if fsencode(p) in self.installed_packages:
@@ -163,7 +165,7 @@ def main():
     version.display()
     git_dir = path.dirname(path.abspath(__file__))
     db = pacman()
-    for root, dirs, files in walk(git_dir):
+    for root, dirs, filenames in walk(git_dir):
         if root == git_dir:
             package_dirs = []
             for d in dirs:
@@ -175,7 +177,7 @@ def main():
         elif path.dirname(root) == git_dir:
             current_dir = root
         else:
-            for f in files:
+            for f in filenames:
                 rel_path = path.relpath(path.join(root, f), current_dir)
                 dest_file = fsencode(path.join('/', rel_path))
                 p.add_ignored_file(dest_file)
