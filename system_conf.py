@@ -29,7 +29,7 @@ class version(namedtuple('version', 'major minor patch extra')):
             return 'v{}.{}.{}-{}'.format(self.major, self.minor, self.patch,
                                          self.extra)
 
-    def print(self, file=sys.stdout):
+    def display(self, file=sys.stdout):
         with ansi.sgr('34', file=file):
             file.write('system-conf ')
             file.write(str(version))
@@ -156,7 +156,7 @@ class pacman:
         return False
 
 def main():
-    version.print()
+    version.display()
     git_dir = os.path.dirname(os.path.abspath(__file__))
     git_dir_len = len(os.path.split(git_dir))
     p = pacman()
