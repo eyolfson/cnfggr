@@ -182,5 +182,5 @@ def main():
             for f in filenames:
                 rel_path = path.relpath(path.join(root, f), current_dir)
                 dest_file = fsencode(path.join('/', rel_path))
-                p.add_ignored_file(dest_file)
+                db.add_ignored_file(dest_file)
     db.disowned()
