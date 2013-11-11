@@ -119,6 +119,7 @@ class pacman:
         s = set()
         for l in p.stdout:
             s.add(l.rstrip(b'\n'))
+        p.wait()
         return s
 
     def _ignored(self, f):
