@@ -140,7 +140,6 @@ def main():
             dirs[:] = package_dirs
         elif os.path.dirname(root) == git_dir:
             current_dir = root
-            print(current_dir)
         else:
             for f in files:
                 abs_path = os.path.join(root, f)
