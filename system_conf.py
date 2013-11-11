@@ -57,19 +57,48 @@ class pacman:
 
     def __init__(self):
         self.file = sys.stdout
-        self.ignored_files = { # filesystem
+        self.installed_packages = self._command_to_set([ 'pacman', '-Qq' ])
+        self.ignored_files = { # dconf
+                               b'/usr/lib/gio/modules/giomodule.cache',
+                               b'/usr/share/applications/mimeinfo.cache',
+                               b'/usr/share/icons/hicolor/icon-theme.cache',
+                               # dhcpcd
+                               b'/etc/dhcpcd.duid',
+                               # filesystem
                                b'/etc/group-',
                                b'/etc/gshadow-',
                                b'/etc/passwd-',
                                b'/etc/shadow-',
+                               # gconf
+                               b'/usr/lib/gio/modules/giomodule.cache',
+                               # gdk-pixbuf2
+                               b'/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache',
+                               # glib2
+                               b'/usr/share/glib-2.0/schemas/gschemas.compiled',
                                # glibc
                                b'/etc/.pwd.lock',
                                b'/etc/ld.so.cache',
+                               b'/usr/lib/locale/locale-archive',
+                               # gtk2 (based off immodules)
+                               b'/usr/lib/gtk-2.0/2.10.0/immodules.cache',
+                               # gtk3 (based off immodules)
+                               b'/usr/lib/gtk-3.0/3.0.0/immodules.cache',
                                # mkinitcpio
                                b'/boot/initramfs-linux.img',
                                b'/boot/initramfs-linux-fallback.img',
+                               # pango
+                               b'/etc/pango/pango.modules',
                                # systemd
-                               b'/etc/machine-id' }
+                               b'/etc/machine-id',
+                               b'/etc/udev/hwdb.bin',
+                               # texinfo
+                               b'/usr/share/info/dir',
+                               # xorg-mkfontdir
+                               b'/usr/share/fonts/TTF/fonts.dir',
+                               b'/usr/share/fonts/misc/fonts.dir',
+                               # xorg-mkfontscale
+                               b'/usr/share/fonts/TTF/fonts.scale',
+                               b'/usr/share/fonts/misc/fonts.scale' }
         self.ignored_dirs = [ # ca-certificates
                               b'/etc/ssl/certs/',
                               # fontconfig
@@ -77,8 +106,10 @@ class pacman:
                               # pacman
                               b'/etc/pacman.d/gnupg/',
                               # shared-mime-info
-                              b'/usr/share/mime/' ]
-        self.installed_packages = self._command_to_set([ 'pacman', '-Qq' ])
+                              b'/usr/share/mime/',
+                              # systemd
+                              b'/etc/systemd/system/getty.target.wants/',
+                              b'/etc/systemd/system/multi-user.target.wants/' ]
 
     def _command_to_set(self, command):
         from subprocess import Popen, PIPE
@@ -120,7 +151,7 @@ class pacman:
                     self.file.write(f.decode())
 
     def installed(self, p):
-        if p in self.installed_packages:
+        if os.fsencode(p) in self.installed_packages:
             return True
         return False
 
@@ -135,7 +166,7 @@ def main():
             for d in dirs:
                 if d == '.git' or d == '__pycache__':
                     continue
-                if p.installed(os.fsencode(d)):
+                if p.installed(d):
                     package_dirs.append(d)
             dirs[:] = package_dirs
         elif os.path.dirname(root) == git_dir:
