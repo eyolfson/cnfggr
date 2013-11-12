@@ -63,7 +63,7 @@ class command:
     def __enter__(self):
         if self.args[0] == 'sudo':
             with prefixer(command.__name__):
-                with ansi.sgr('32'):
+                with ansi.sgr('34'):
                     stdout.write(' '.join(self.display_args))
         self.process = Popen(self.args, **self.kwargs)
         return self.process
@@ -156,7 +156,7 @@ class pacman:
                     with ansi.sgr('31'):
                         self.file.write(f.decode())
                     self.file.write(' does not exist')
-        for f in sorted(all_files.difference(owned_files)):
+        for f in sorted(all_files.difference(owned_files), reverse=True):
             if self.ignored(f):
                 continue
             with prefix:
@@ -192,11 +192,23 @@ def update(src_filename, dest_filename):
         p.wait()
         if p.returncode == 0:
             return
+        diff = p.stdout
 
     with prefix:
         with ansi.sgr('33'):
             stdout.write(dest_filename.decode())
         stdout.write(' differs')
+    for line in diff:
+        display_line = line.rstrip(b'\n').decode()
+        with prefixer('diff'):
+            if display_line.startswith('+'):
+                with ansi.sgr('32'):
+                    stdout.write(display_line)
+            elif display_line.startswith('-'):
+                with ansi.sgr('31'):
+                    stdout.write(display_line)
+            else:
+                stdout.write(display_line)
 
 def main():
     version.display()
