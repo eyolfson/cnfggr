@@ -13,6 +13,7 @@ master.
 
 ## Requirements
 
+- Diffutils
 - Git 1.8
 - Python 3
 - Sudo

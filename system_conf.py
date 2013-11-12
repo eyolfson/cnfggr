@@ -15,6 +15,7 @@
 
 from collections import namedtuple
 from os import fsencode, path, walk
+from subprocess import Popen, PIPE, call
 from sys import stdout
 
 import ansi
@@ -52,6 +53,31 @@ class prefixer:
     def __exit__(self, type, value, traceback):
         self.file.write('\n')
 
+class command:
+
+    def __init__(self, args, **kwargs):
+        self.args = args
+        self.display_args = [x.decode() if isinstance(x, bytes) else x for x in args]
+        self.kwargs = kwargs
+
+    def __enter__(self):
+        if self.args[0] == 'sudo':
+            with prefixer(command.__name__):
+                with ansi.sgr('32'):
+                    stdout.write(' '.join(self.display_args))
+        self.process = Popen(self.args, **self.kwargs)
+        return self.process
+
+    def __exit__(self, type, value, trackpack):
+        self.process.wait()
+
+def command_stdout_to_set(args):
+    s = set()
+    with command(args, stdout=PIPE) as p:
+        for l in p.stdout:
+            s.add(l.rstrip(b'\n'))
+    return s
+
 ignored_files = [ ( 'dconf', [ b'/usr/lib/gio/modules/giomodule.cache',
                                b'/usr/share/applications/mimeinfo.cache',
                                b'/usr/share/icons/hicolor/icon-theme.cache' ] ),
@@ -75,7 +101,7 @@ class pacman:
 
     def __init__(self):
         self.file = stdout
-        self.installed_packages = self._command_to_set([ 'pacman', '-Qq' ])
+        self.installed_packages = command_stdout_to_set([ 'pacman', '-Qq' ])
         self.ignored_files = { # gdk-pixbuf2
                                b'/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache',
                                # glib2
@@ -106,20 +132,7 @@ class pacman:
                               b'/etc/systemd/system/getty.target.wants/',
                               b'/etc/systemd/system/multi-user.target.wants/' ]
 
-    def _command_to_set(self, command):
-        if command[0] == 'sudo':
-            with prefixer('command'):
-                with ansi.sgr('32'):
-                    self.file.write(' '.join(command))
-        from subprocess import Popen, PIPE
-        p = Popen(command, stdout=PIPE)
-        s = set()
-        for l in p.stdout:
-            s.add(l.rstrip(b'\n'))
-        p.wait()
-        return s
-
-    def _ignored(self, f):
+    def ignored(self, f):
         if f in self.ignored_files:
             return True
         for d in self.ignored_dirs:
@@ -132,12 +145,11 @@ class pacman:
 
     def disowned(self):
         prefix = prefixer(self.disowned.__name__)
-        owned_command = [ 'pacman', '-Qlq' ]
+        owned_files = command_stdout_to_set([ 'pacman', '-Qlq' ])
         all_command = [ 'sudo', 'find', '/boot', '/etc', '/opt', '/usr', '!',
                         '-name', 'lost+found', '(', '-type', 'd', '-printf',
-                        '%p/\n', '-o', '-print', ')' ]
-        owned_files = self._command_to_set(owned_command)
-        all_files = self._command_to_set(all_command)
+                        r'%p/\n', '-o', '-print', ')' ]
+        all_files = command_stdout_to_set(all_command)
         for f in sorted(owned_files.difference(all_files)):
             if not path.lexists(f):
                 with prefix:
@@ -145,7 +157,7 @@ class pacman:
                         self.file.write(f.decode())
                     self.file.write(' does not exist')
         for f in sorted(all_files.difference(owned_files)):
-            if self._ignored(f):
+            if self.ignored(f):
                 continue
             with prefix:
                 with ansi.sgr('33'):
@@ -162,6 +174,29 @@ class pacman:
                         self.file.write(package)
                     self.file.write(' not installed')
             return False
+
+def update(src_filename, dest_filename):
+    prefix = prefixer(update.__name__)
+    if not path.lexists(dest_filename):
+        with prefix:
+            with ansi.sgr('33'):
+                stdout.write(dest_filename.decode())
+            stdout.write(' copying')
+        dest_dirname = path.dirname(dest_filename)
+        with command(['sudo', 'mkdir', '-p', dest_dirname]): pass
+        with command(['sudo', 'cp', '-P', src_filename, dest_filename]): pass
+        return
+
+    with command(['sudo', 'diff', '-u', '--no-dereference',
+                  src_filename, dest_filename], stdout=PIPE) as p:
+        p.wait()
+        if p.returncode == 0:
+            return
+
+    with prefix:
+        with ansi.sgr('33'):
+            stdout.write(dest_filename.decode())
+        stdout.write(' differs')
 
 def main():
     version.display()
@@ -180,7 +215,9 @@ def main():
             current_dir = root
         else:
             for f in filenames:
-                rel_path = path.relpath(path.join(root, f), current_dir)
-                dest_file = fsencode(path.join('/', rel_path))
-                db.add_ignored_file(dest_file)
+                src_filename = path.join(root, f)
+                rel_path = path.relpath(src_filename, current_dir)
+                dest_filename = fsencode(path.join('/', rel_path))
+                update(src_filename, dest_filename)
+                db.add_ignored_file(dest_filename)
     db.disowned()
