@@ -16,7 +16,7 @@
 from collections import namedtuple
 from os import fsencode, path, walk
 from subprocess import Popen, PIPE, call
-from sys import stdout
+from sys import stdin, stdout
 
 import ansi
 
@@ -57,7 +57,8 @@ class command:
 
     def __init__(self, args, **kwargs):
         self.args = args
-        self.display_args = [x.decode() if isinstance(x, bytes) else x for x in args]
+        self.display_args = [x.decode() if isinstance(x, bytes) else x
+                             for x in args]
         self.kwargs = kwargs
 
     def __enter__(self):
@@ -148,6 +149,7 @@ class pacman:
                         '-name', 'lost+found', '(', '-type', 'd', '-printf',
                         r'%p/\n', '-o', '-print', ')' ]
         all_files = command_stdout_to_set(all_command)
+        ignore_options = False
         for f in sorted(owned_files.difference(all_files)):
             if not path.lexists(f):
                 with prefix:
@@ -161,6 +163,19 @@ class pacman:
                 with ansi.sgr('33'):
                     self.file.write(f.decode())
                 self.file.write(' not owned')
+
+            if not ignore_options:
+                with prefix:
+                    stdout.write('Options: i - ignore, a - ignore all, r - remove')
+                option = stdin.readline().rstrip('\n')
+
+                if option == 'a':
+                    ignore_options = True
+                elif option == 'r':
+                    if f.endswith(b'/'):
+                        with command(['sudo', 'rmdir', f]): pass
+                    else:
+                        with command(['sudo', 'rm', f]): pass
 
     def installed(self, package, warn=True):
         if fsencode(package) in self.installed_packages:
@@ -196,17 +211,31 @@ def update(src_filename, dest_filename):
         with ansi.sgr('33'):
             stdout.write(dest_filename.decode())
         stdout.write(' differs')
-    for line in diff:
-        display_line = line.rstrip(b'\n').decode()
-        with prefixer('diff'):
-            if display_line.startswith('+'):
-                with ansi.sgr('32'):
+
+    with prefix:
+        stdout.write('Options: i - ignore, d - show diff, o - ours, t - theirs')
+    option = stdin.readline().rstrip('\n')
+
+    if option == 'd':
+        for line in diff:
+            display_line = line.rstrip(b'\n').decode()
+            with prefixer('diff'):
+                if display_line.startswith('+'):
+                    with ansi.sgr('32'):
+                        stdout.write(display_line)
+                elif display_line.startswith('-'):
+                    with ansi.sgr('31'):
+                        stdout.write(display_line)
+                else:
                     stdout.write(display_line)
-            elif display_line.startswith('-'):
-                with ansi.sgr('31'):
-                    stdout.write(display_line)
-            else:
-                stdout.write(display_line)
+        with prefix:
+            stdout.write('Options: i - ignore, o - ours, t - theirs')
+        option = stdin.readline().rstrip('\n')
+
+    if option == 'o':
+        with command(['sudo', 'cp', '-P', src_filename, dest_filename]): pass
+    elif option == 't':
+        with command(['cp', '-P', dest_filename, src_filename]): pass
 
 def main():
     version.display()
