@@ -141,6 +141,11 @@ class pacman:
 
     def add_ignored_file(self, f):
         self.ignored_files.add(f)
+        while True:
+            i = f.rfind(b'/')
+            if i == 0: break
+            f = f[:i+1]
+            self.ignored_files.add(f)
 
     def disowned(self):
         prefix = prefixer(self.disowned.__name__)
