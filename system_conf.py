@@ -80,6 +80,7 @@ def command_stdout_to_set(args):
 
 ignored_files = [ ( 'dconf', [ b'/usr/lib/gio/modules/giomodule.cache',
                                b'/usr/share/applications/mimeinfo.cache',
+                               b'/usr/share/icons/gnome/icon-theme.cache',
                                b'/usr/share/icons/hicolor/icon-theme.cache' ] ),
                   ( 'dhcpcd', [ b'/etc/dhcpcd.duid' ] ),
                   ( 'filesystem', [ b'/etc/group-',
@@ -127,10 +128,7 @@ class pacman:
                               # pacman
                               b'/etc/pacman.d/gnupg/',
                               # shared-mime-info
-                              b'/usr/share/mime/',
-                              # systemd
-                              b'/etc/systemd/system/getty.target.wants/',
-                              b'/etc/systemd/system/multi-user.target.wants/' ]
+                              b'/usr/share/mime/' ]
 
     def ignored(self, f):
         if f in self.ignored_files:
