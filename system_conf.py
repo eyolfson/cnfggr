@@ -114,9 +114,11 @@ class pacman:
                                b'/usr/lib/gtk-3.0/3.0.0/immodules.cache',
                                # xorg-mkfontdir
                                b'/usr/share/fonts/TTF/fonts.dir',
+                               b'/usr/share/fonts/Type1/fonts.dir',
                                b'/usr/share/fonts/misc/fonts.dir',
                                # xorg-mkfontscale
                                b'/usr/share/fonts/TTF/fonts.scale',
+                               b'/usr/share/fonts/Type1/fonts.scale',
                                b'/usr/share/fonts/misc/fonts.scale' }
         for package, files in ignored_files:
             if self.installed(package, warn=False):
