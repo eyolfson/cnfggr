@@ -97,7 +97,9 @@ ignored_files = [ ( 'dconf', [ b'/usr/lib/gio/modules/giomodule.cache',
                   ( 'pango', [ b'/etc/pango/pango.modules' ] ),
                   ( 'systemd', [ b'/etc/machine-id',
                                  b'/etc/udev/hwdb.bin' ] ),
-                  ( 'texinfo', [ b'/usr/share/info/dir' ] ) ]
+                  ( 'texinfo', [ b'/usr/share/info/dir' ] ),
+                  ( 'texlive-bin', [ b'/usr/share/texmf-dist/ls-R',
+                                     b'/etc/texmf/ls-R' ] ) ]
 
 class pacman:
 
