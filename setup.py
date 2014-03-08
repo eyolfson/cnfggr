@@ -18,7 +18,7 @@ from distutils.core import setup
 
 setup(
     name = 'cnfggr',
-    packages = ['cnfggr']
+    packages = ['cnfggr'],
     version = '0.0.0',
     description = 'A basic configuration helper',
     author = 'Jon Eyolfson',
@@ -26,4 +26,5 @@ setup(
     url = 'https://github.com/eyolfson/cnfggr/',
     download_url = ('https://github.com/eyolfson/cnfggr/archive/'
                     'v0.0.0.tar.gz'),
+    scripts = ['cnfggr/bin/cnfggr'],
 )
