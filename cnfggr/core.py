@@ -1,41 +1,28 @@
-# Copyright 2013 Jon Eyolfson
+#!/usr/bin/env python
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Copyright 2014 Jon Eyolfson
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# This file is part of Cnfggr.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Cnfggr is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# Cnfggr is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# Cnfggr. If not, see <http://www.gnu.org/licenses/>.
 
 from collections import namedtuple
 from os import fsencode, path, walk
 from subprocess import Popen, PIPE, call
 from sys import stdin, stdout
 
-import ansi
-
-class version(namedtuple('version', 'major minor patch extra')):
-
-    def __str__(self):
-        if self.extra == '':
-            return 'v{}.{}.{}'.format(self.major, self.minor, self.patch)
-        else:
-            return 'v{}.{}.{}-{}'.format(self.major, self.minor, self.patch,
-                                         self.extra)
-
-    def display(self, file=stdout):
-        with ansi.sgr('34', file=file):
-            file.write('system-conf ')
-            file.write(str(version))
-        file.write('\n')
-
-version = version(0, 0, 0, 'development')
+from cnfggr import ansi
+from cnfggr.version import get_version
 
 class prefixer:
 
@@ -247,7 +234,7 @@ def update(src_filename, dest_filename):
         with command(['cp', '-P', dest_filename, src_filename]): pass
 
 def main():
-    version.display()
+    print(get_version())
     git_dir = path.dirname(path.abspath(__file__))
     db = pacman()
     for root, dirs, filenames in walk(git_dir):

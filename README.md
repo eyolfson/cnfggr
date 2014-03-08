@@ -1,4 +1,4 @@
-# system-conf
+# Cnfggr
 
 system-conf is a customizable system configuration repository.
 
@@ -17,9 +17,3 @@ master.
 - Git 1.8
 - Python 3
 - Sudo
-
-## License
-
-GPL v3
-
-[1]: http://git-scm.com/book/en/Git-Branching/
