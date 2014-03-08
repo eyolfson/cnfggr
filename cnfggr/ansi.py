@@ -18,28 +18,24 @@
 
 import sys
 
-class SGR:
-    RESET = '0'
-    BOLD = '1'
-    FG_RED = '31'
-    FG_GREEN = '32'
-    FG_YELLOW = '33'
-    FG_BLUE = '34'
-    FG_MAGENTA = '35'
-    FG_CYAN = '36'
+RESET = '0'
+BOLD = '1'
+FG_BLACK = '30'
+FG_RED = '31'
+FG_GREEN = '32'
+FG_YELLOW = '33'
+FG_BLUE = '34'
+FG_MAGENTA = '35'
+FG_CYAN = '36'
+FG_WHITE = '37'
 
-class sgr:
+def sgr(*args):
+    return '\x1b[{}m'.format(';'.join(args))
 
-    BEGIN = '\x1b['
-    END = 'm'
-    RESET = '{}{}'.format(BEGIN, END)
-
-    def __init__(self, parameter, file=sys.stdout):
-        self.code = '{}{}{}'.format(sgr.BEGIN, parameter, sgr.END)
-        self.file = file
-
-    def __enter__(self):
-        self.file.write(self.code)
-
-    def __exit__(self, type, value, traceback):
-        self.file.write(sgr.RESET)
+def print_func(*codes, sep=' ', end='\n', file=sys.stdout):
+    def func(*args):
+        file.write(sgr(*codes))
+        file.write(sep.join([str(x) for x in args]))
+        file.write(sgr(RESET))
+        file.write(end)
+    return func
