@@ -29,7 +29,7 @@ class Version(namedtuple('Version', ['major', 'minor', 'patch', 'extra'])):
         return s
 
 def get_version():
-    version = Version(0, 0, 2, '')
+    version = Version(0, 0, 2, 'development')
 
     if version.extra != 'development':
         return version
