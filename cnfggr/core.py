@@ -43,13 +43,17 @@ def main():
 
     from cnfggr.pacman import Database
     db = Database()
+    PACKAGE_DEPTH = 1
 
     config_files = set()
     for root, dirs, files in os.walk(config_dir, followlinks=False):
         if root != config_dir:
             for f in files:
                 relpath = os.path.relpath(os.path.join(root, f), config_dir)
-                package, f = relpath.split('/', maxsplit=1)
+                split = relpath.split('/', maxsplit=PACKAGE_DEPTH)
+                package = '/'.join(split[:-1])
+                f = split[-1]
+                print(package, f)
                 path = os.path.join('/', f)
                 config_files.add(path)
                 command = ['diff', '-q', '--no-dereference', relpath, path]
