@@ -66,7 +66,7 @@ def main():
                 dirs.remove(d)
 
     root_dirs = {'boot', 'etc', 'opt', 'usr'}
-    disowned_dirs = []
+    unmanaged_dirs = []
     for root, dirs, files in os.walk('/', followlinks=False):
         if root == '/':
             skipped_dirs = [d for d in dirs if d not in root_dirs]
@@ -75,7 +75,8 @@ def main():
 
         skipped_dirs = []
         for d in dirs:
-            # non-symlink directory paths end with /
+            # symlinks are included in dirs bit their path appears as a file
+            # directory paths always end with /
             path = os.path.join(root, d)
             if not os.path.islink(path):
                 path = '{}/'.format(path)
@@ -85,7 +86,7 @@ def main():
             if disowned or ignored:
                 skipped_dirs.append(d)
             if disowned and not ignored:
-                disowned_dirs.append(path)
+                unmanaged_dirs.append(path)
         for d in skipped_dirs:
             dirs.remove(d)
 
@@ -97,9 +98,15 @@ def main():
             if disowned and (not ignored) and (not config):
                 print_error('unmanaged file:', path)
 
-    for d in disowned_dirs:
+    # A non-configuration file in an unmanaged directory is unmanaged itself
+    for d in unmanaged_dirs:
+        empty = True
         for root, dirs, files in os.walk(d):
             for f in files:
                 path = os.path.join(root, f)
                 if not path in config_files:
                     print_error('unmanaged file:', path)
+            if empty and len(files) > 0:
+                empty = False
+        if empty:
+            print_warning('unmanaged empty directory:', d)
