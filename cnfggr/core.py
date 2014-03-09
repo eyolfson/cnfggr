@@ -29,8 +29,6 @@ print_info = ansi.print_func(ansi.FG_BLUE)
 print_warning = ansi.print_func(ansi.FG_YELLOW)
 print_error = ansi.print_func(ansi.FG_RED)
 
-PRINT_DISOWNED = True
-
 class Pacman:
 
     IGNORED = {'ca-certificates': ['/etc/ssl/certs/'],
@@ -84,29 +82,21 @@ class Pacman:
                               universal_newlines=True) as p:
             for l in p.stdout:
                 self.owned_paths.add(l.rstrip('\n'))
-        self.ignored_dirs = []
-        self.ignored_files = set()
+        self.ignored_paths = set()
         for package, paths in Pacman.IGNORED.items():
             if not package in self.packages:
                 continue
             for p in paths:
-                if p.endswith('/'):
-                    self.ignored_dirs.append(p)
-                else:
-                    self.ignored_files.add(p)
+                self.ignored_paths.add(p)
 
     def is_package(self, p):
         return p in self.packages
 
-    def is_path(self, p):
-        if p in self.owned_paths:
-            return True
-        if p in self.ignored_files:
-            return True
-        for ignored_dir in self.ignored_dirs:
-            if p.startswith(ignored_dir):
-                return True
-        return False
+    def is_disowned_path(self, p):
+        return p not in self.owned_paths
+
+    def is_ignored_path(self, p):
+        return p in self.ignored_paths
 
 def main():
     print_title('Cnfggr', get_version())
@@ -119,70 +109,65 @@ def main():
     else:
         config_dir = sys.argv[1]
     print_info('config directory:', config_dir)
-    config_dict = {}
-    for root, dirs, files in os.walk(config_dir):
+
+    db = Pacman()
+
+    config_files = set()
+    for root, dirs, files in os.walk(config_dir, followlinks=False):
         if root != config_dir:
             for f in files:
                 relpath = os.path.relpath(os.path.join(root, f), config_dir)
-                package, path = relpath.split('/', maxsplit=1)
-                if package in config_dict:
-                    config_dict[package].append(path)
-                else:
-                    config_dict[package] = [path]
+                package, f = relpath.split('/', maxsplit=1)
+                path = os.path.join('/', f)
+                config_files.add(path)
+                command = ['diff', '-q', '--no-dereference', relpath, path]
+                subprocess.call(command)
         else:
-            ignored_dirs = [d for d in dirs if d.startswith('.')]
-            for d in ignored_dirs:
+            skipped_dirs = []
+            for d in dirs:
+                if d.startswith('.'):
+                    skipped_dirs.append(d)
+                elif not db.is_package(d):
+                    print_error('missing package:', d)
+                    skipped_dirs.append(d)
+            for d in skipped_dirs:
                 dirs.remove(d)
-
-    db = Pacman()
-    config_files = set()
-    for package, files in config_dict.items():
-        if not db.is_package(package):
-            print_error('missing package:', package)
-            continue
-        for f in files:
-            path = os.path.join('/', f)
-            config_path = os.path.join(config_dir, package, f)
-            subprocess.call(['diff', '-q', '--no-dereference', path,
-                             config_path])
-            config_files.add(path)
-
-    if not PRINT_DISOWNED:
-        return
 
     root_dirs = {'boot', 'etc', 'opt', 'usr'}
     disowned_dirs = []
-    disowned_files = []
-    for root, dirs, files in os.walk('/'):
+    for root, dirs, files in os.walk('/', followlinks=False):
         if root == '/':
-            ignored_dirs = [d for d in dirs if d not in root_dirs]
-            for d in ignored_dirs:
+            skipped_dirs = [d for d in dirs if d not in root_dirs]
+            for d in skipped_dirs:
                 dirs.remove(d)
 
-        ignored_dirs = []
+        skipped_dirs = []
         for d in dirs:
-            path = os.path.join(root, d)
             # non-symlink directory paths end with /
+            path = os.path.join(root, d)
             if not os.path.islink(path):
                 path = '{}/'.format(path)
-            if not db.is_path(path):
-                ignored_dirs.append(d)
+
+            disowned = db.is_disowned_path(path)
+            ignored = db.is_ignored_path(path)
+            if disowned or ignored:
+                skipped_dirs.append(d)
+            if disowned and not ignored:
                 disowned_dirs.append(path)
-        for d in ignored_dirs:
+        for d in skipped_dirs:
             dirs.remove(d)
 
         for f in files:
             path = os.path.join(root, f)
-            if not db.is_path(path):
-                disowned_files.append(path)
-
-    for f in disowned_files:
-        if not f in config_files:
-            print_error('disowned file:', f)
+            disowned = db.is_disowned_path(path)
+            ignored = db.is_ignored_path(path)
+            config = path in config_files
+            if disowned and (not ignored) and (not config):
+                print_error('unmanaged file:', path)
 
     for d in disowned_dirs:
         for root, dirs, files in os.walk(d):
             for f in files:
                 path = os.path.join(root, f)
                 if not path in config_files:
-                    print_error('disowned file:', path)
+                    print_error('unmanaged file:', path)
