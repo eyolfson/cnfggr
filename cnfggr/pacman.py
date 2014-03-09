@@ -1,3 +1,5 @@
+import subprocess
+
 class Database:
 
     IGNORED = {'ca-certificates': ['/etc/ssl/certs/'],
@@ -52,7 +54,7 @@ class Database:
             for l in p.stdout:
                 self.owned_paths.add(l.rstrip('\n'))
         self.ignored_paths = set()
-        for package, paths in Pacman.IGNORED.items():
+        for package, paths in Database.IGNORED.items():
             if not package in self.packages:
                 continue
             for p in paths:
