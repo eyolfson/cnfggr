@@ -56,9 +56,11 @@ class Pacman:
                          '/usr/lib/locale/locale-archive'] ,
                'gtk2': ['/usr/lib/gtk-2.0/2.10.0/immodules.cache'],
                'gtk3': ['/usr/lib/gtk-3.0/3.0.0/immodules.cache'],
+               'gummiboot': ['/boot/EFI/'],
                'libxml2': ['/etc/xml/'],
                'mkinitcpio': ['/boot/initramfs-linux.img',
                               '/boot/initramfs-linux-fallback.img'],
+               'ntp': ['/etc/adjtime'],
                'openssh': ['/etc/ssh/'],
                'pango': ['/etc/pango/pango.modules'],
                'pacman': ['/etc/pacman.d/gnupg/'],
@@ -121,24 +123,24 @@ def main():
     else:
         config_dir = sys.argv[1]
     print_info('config directory:', config_dir)
-    config_files = {}
+    config_dict = {}
     for root, dirs, files in os.walk(config_dir):
         if root != config_dir:
             for f in files:
                 relpath = os.path.relpath(os.path.join(root, f), config_dir)
                 package, path = relpath.split('/', maxsplit=1)
-                if package in config_files:
-                    config_files[package].append(path)
+                if package in config_dict:
+                    config_dict[package].append(path)
                 else:
-                    config_files[package] = [path]
+                    config_dict[package] = [path]
         else:
             ignored_dirs = [d for d in dirs if d.startswith('.')]
             for d in ignored_dirs:
                 dirs.remove(d)
-            
 
     db = Pacman()
-    for package, files in config_files.items():
+    config_files = set()
+    for package, files in config_dict.items():
         if not db.is_package(package):
             print_error('missing package:', package)
             continue
@@ -147,30 +149,44 @@ def main():
             config_path = os.path.join(config_dir, package, f)
             subprocess.call(['diff', '-q', '--no-dereference', path,
                              config_path])
+            config_files.add(path)
 
     if not PRINT_DISOWNED:
         return
 
     root_dirs = {'boot', 'etc', 'opt', 'usr'}
+    disowned_dirs = []
+    disowned_files = []
     for root, dirs, files in os.walk('/'):
         if root == '/':
             ignored_dirs = [d for d in dirs if d not in root_dirs]
             for d in ignored_dirs:
                 dirs.remove(d)
 
-        disowned_dirs = []
+        ignored_dirs = []
         for d in dirs:
             path = os.path.join(root, d)
             # non-symlink directory paths end with /
             if not os.path.islink(path):
                 path = '{}/'.format(path)
             if not db.is_path(path):
-                disowned_dirs.append(d)
-                print_error('disowned directory:', path)
-        for d in disowned_dirs:
+                ignored_dirs.append(d)
+                disowned_dirs.append(path)
+        for d in ignored_dirs:
             dirs.remove(d)
 
         for f in files:
             path = os.path.join(root, f)
             if not db.is_path(path):
-                print_error('disowned file:', path) 
+                disowned_files.append(path)
+
+    for f in disowned_files:
+        if not f in config_files:
+            print_error('disowned file:', f)
+
+    for d in disowned_dirs:
+        for root, dirs, files in os.walk(d):
+            for f in files:
+                path = os.path.join(root, f)
+                if not path in config_files:
+                    print_error('disowned file:', path)
