@@ -32,8 +32,8 @@ FG_WHITE = '37'
 def sgr(*args):
     return '\x1b[{}m'.format(';'.join(args))
 
-def print_func(*codes, sep=' ', end='\n', file=sys.stdout):
-    def func(*args):
+def print_func(*codes):
+    def func(*args, sep=' ', end='\n', file=sys.stdout):
         file.write(sgr(*codes))
         file.write(sep.join([str(x) for x in args]))
         file.write(sgr(RESET))
