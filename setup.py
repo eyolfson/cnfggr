@@ -19,12 +19,12 @@ from distutils.core import setup
 setup(
     name = 'cnfggr',
     packages = ['cnfggr'],
-    version = '0.0.1',
+    version = '0.0.2',
     description = 'A basic configuration helper',
     author = 'Jon Eyolfson',
     author_email = 'jon@eyl.io',
     url = 'https://github.com/eyolfson/cnfggr/',
     download_url = ('https://github.com/eyolfson/cnfggr/archive/'
-                    'v0.0.1.tar.gz'),
+                    'v0.0.2.tar.gz'),
     scripts = ['cnfggr/bin/cnfggr'],
 )
