@@ -123,7 +123,6 @@ def main():
     print_info('config directory:', config_dir)
     config_files = {}
     for root, dirs, files in os.walk(config_dir):
-        dirs = [d for d in dirs if not d.startswith('.')]
         if root != config_dir:
             for f in files:
                 relpath = os.path.relpath(os.path.join(root, f), config_dir)
@@ -132,6 +131,11 @@ def main():
                     config_files[package].append(path)
                 else:
                     config_files[package] = [path]
+        else:
+            ignored_dirs = [d for d in dirs if d.startswith('.')]
+            for d in ignored_dirs:
+                dirs.remove(d)
+            
 
     db = Pacman()
     for package, files in config_files.items():
