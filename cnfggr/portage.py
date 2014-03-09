@@ -14,13 +14,15 @@ class Database:
             for l in p.stdout:
                 self.packages.add(l.rstrip('\n'))
         self.owned_paths = set()
-        with subprocess.Popen(['equery', 'files'], stdout=subprocess.PIPE,
-                              universal_newlines=True) as p:
-            for l in p.stdout:
-                path = l.rstrip('\n')
-                if os.path.isdir(path) and not os.path.islink(path):
-                    path = '{}/'.format(path)
-                self.owned_paths.add(path)
+        for p in self.packages:
+            with subprocess.Popen(['equery', 'files', p],
+                                  stdout=subprocess.PIPE,
+                                  universal_newlines=True) as p:
+                for l in p.stdout:
+                    path = l.rstrip('\n')
+                    if os.path.isdir(path) and not os.path.islink(path):
+                        path = '{}/'.format(path)
+                    self.owned_paths.add(path)
         self.ignored_paths = set()
         for package, paths in Database.IGNORED.items():
             if not package in self.packages:
