@@ -53,7 +53,6 @@ def main():
                 split = relpath.split('/', maxsplit=PACKAGE_DEPTH)
                 package = '/'.join(split[:-1])
                 f = split[-1]
-                print(package, f)
                 path = os.path.join('/', f)
                 config_files.add(path)
                 command = ['diff', '-q', '--no-dereference', relpath, path]
