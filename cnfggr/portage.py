@@ -3,6 +3,8 @@ import os
 
 class Database:
 
+    IGNORED = {'sys-apps/portage': ['/usr/portage/']}
+
     def __init__(self):
         self.packages = set()
         with subprocess.Popen(['eix', '-I', '--only-names'],
