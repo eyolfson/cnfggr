@@ -23,10 +23,6 @@ import sys
 from cnfggr import ansi
 from cnfggr.version import get_version
 
-from os import fsencode, path, walk
-from subprocess import Popen, PIPE, call
-from sys import stdin, stdout
-
 print_title = ansi.print_func(ansi.BOLD, ansi.FG_BLUE)
 print_success = ansi.print_func(ansi.FG_GREEN)
 print_info = ansi.print_func(ansi.FG_BLUE)
