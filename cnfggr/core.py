@@ -80,16 +80,20 @@ def main():
         for d in dirs:
             # symlinks are included in dirs bit their path appears as a file
             # directory paths always end with /
+            symlink = True
             path = os.path.join(root, d)
             if not os.path.islink(path):
+                symlink = False
                 path = '{}/'.format(path)
 
             disowned = db.is_disowned_path(path)
             ignored = db.is_ignored_path(path)
-            if disowned or ignored:
-                skipped_dirs.append(d)
-            if disowned and not ignored:
-                unmanaged_dirs.append(path)
+
+            if not symlink:
+                if disowned or ignored:
+                    skipped_dirs.append(d)
+                if disowned and not ignored:
+                    unmanaged_dirs.append(path)
         for d in skipped_dirs:
             dirs.remove(d)
 
