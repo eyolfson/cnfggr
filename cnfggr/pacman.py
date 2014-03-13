@@ -2,7 +2,8 @@ import subprocess
 
 class Database:
 
-    IGNORED = {'ca-certificates': ['/etc/ssl/certs/'],
+    IGNORED = {'bind': ['/etc/rndc.key'],
+               'ca-certificates': ['/etc/ssl/certs/'],
                'dconf': ['/usr/lib/gio/modules/giomodule.cache',
                          '/usr/share/applications/mimeinfo.cache',
                          '/usr/share/icons/gnome/icon-theme.cache',
@@ -29,6 +30,7 @@ class Database:
                'openssh': ['/etc/ssh/'],
                'pango': ['/etc/pango/pango.modules'],
                'pacman': ['/etc/pacman.d/gnupg/'],
+               'ppp': ['/etc/ppp/resolv.conf'],
                'shared-mime-info': ['/usr/share/mime/'],
                'systemd': ['/etc/machine-id',
                            '/etc/udev/hwdb.bin'],
