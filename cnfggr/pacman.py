@@ -26,6 +26,7 @@ class Database:
                'libxml2': ['/etc/xml/'],
                'mkinitcpio': ['/boot/initramfs-linux.img',
                               '/boot/initramfs-linux-fallback.img'],
+               'nfs-utils': ['/etc/idmapd.conf'],
                'ntp': ['/etc/adjtime'],
                'openssh': ['/etc/ssh/'],
                'pango': ['/etc/pango/pango.modules'],
