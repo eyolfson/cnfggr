@@ -9,7 +9,6 @@ class Database:
                          '/usr/share/icons/gnome/icon-theme.cache',
                          '/usr/share/icons/hicolor/icon-theme.cache'],
                'dhcpcd': ['/etc/dhcpcd.duid'],
-               'fontconfig': ['/etc/fonts/conf.d/'],
                'filesystem': ['/etc/group-',
                               '/etc/gshadow-',
                               '/etc/passwd-',
